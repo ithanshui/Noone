@@ -22,6 +22,11 @@ namespace Noone
         public Container(string cfg = "cfg.xml")
         {
             cid = Interlocked.Increment(ref currCid);
+            if (!string.IsNullOrWhiteSpace(cfg))
+            {
+                var ch = new ContainerHelper(cfg, this);
+                ch.LoadConfig();
+            }
         }
         /// <summary>
         ///  注册
@@ -43,12 +48,13 @@ namespace Noone
         /// <typeparam name="S">继承类</typeparam>
         /// <param name="name"></param>
         /// <param name="name">索引名称,默认为空</param>
-        public void RegisterSingleton<F, S>(string name = null) where S : F, new() where F : class
+        /// <param name="isPerThread">是否每线程创建单独的单例,默认为否</param>
+        public void RegisterSingleton<F, S>(string name = null, bool isPerThread = false) where S : F, new() where F : class
         {
             if (name == null)
-                Factory<F>.GetFactory(cid).RegSingleton<S>();
+                Factory<F>.GetFactory(cid).RegSingleton<S>(isPerThread);
             else
-                Factory<F>.GetFactory(cid).RegSingleton<S>(name);
+                Factory<F>.GetFactory(cid).RegSingleton<S>(name, isPerThread);
         }
         /// <summary>
         /// 注册,对象由传入的Func委托创建
@@ -63,18 +69,20 @@ namespace Noone
             else
                 Factory<F>.GetFactory(cid).Reg(func, name);
         }
+
         /// <summary>
         /// 注册单例,对象由传入的Func委托创建
         /// </summary>
         /// <typeparam name="F">接口或父类</typeparam>
         /// <param name="func">对象创建委托</param>
         /// <param name="name">索引名称,默认为空</param>
-        public void RegisterSingleton<F>(Func<F> func, string name = null) where F : class
+        /// <param name="isPerThread">是否每线程创建单独的单例,默认为否</param>
+        public void RegisterSingleton<F>(Func<F> func, string name = null, bool isPerThread = false) where F : class
         {
             if (name == null)
-                Factory<F>.GetFactory(cid).RegSingleton(func);
+                Factory<F>.GetFactory(cid).RegSingleton(func,isPerThread);
             else
-                Factory<F>.GetFactory(cid).RegSingleton(func, name);
+                Factory<F>.GetFactory(cid).RegSingleton(func, name, isPerThread);
         }
         /// <summary>
         /// 获取
