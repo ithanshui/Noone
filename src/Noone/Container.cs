@@ -34,7 +34,7 @@ namespace Noone
         /// <typeparam name="F">接口或父类</typeparam>
         /// <typeparam name="S">继承类</typeparam>
         /// <param name="name">索引名称,默认为空</param>
-        public void Register<F, S>(string name = null) where S : F, new() where F : class
+        public void Register<F, S>(string name = null) where S : class, F, new() where F : class
         {
             if (name == null)
                 Factory<F>.GetFactory(cid).Reg<S>();
@@ -49,7 +49,7 @@ namespace Noone
         /// <param name="name"></param>
         /// <param name="name">索引名称,默认为空</param>
         /// <param name="isPerThread">是否每线程创建单独的单例,默认为否</param>
-        public void RegisterSingleton<F, S>(string name = null, bool isPerThread = false) where S : F, new() where F : class
+        public void RegisterSingleton<F, S>(string name = null, bool isPerThread = false) where S : class, F, new() where F : class
         {
             if (name == null)
                 Factory<F>.GetFactory(cid).RegSingleton<S>(isPerThread);
@@ -80,7 +80,7 @@ namespace Noone
         public void RegisterSingleton<F>(Func<F> func, string name = null, bool isPerThread = false) where F : class
         {
             if (name == null)
-                Factory<F>.GetFactory(cid).RegSingleton(func,isPerThread);
+                Factory<F>.GetFactory(cid).RegSingleton(func, isPerThread);
             else
                 Factory<F>.GetFactory(cid).RegSingleton(func, name, isPerThread);
         }

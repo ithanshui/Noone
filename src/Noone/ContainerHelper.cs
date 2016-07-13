@@ -49,7 +49,7 @@ namespace Noone
             }
         }
 
-        private void RegContainerNewType<F, S>(string name, bool isSingleton, bool isPerThread) where F : class where S : F, new()
+        private void RegContainerNewType<F, S>(string name, bool isSingleton, bool isPerThread) where F : class where S : class, F, new()
         {
             if (string.IsNullOrWhiteSpace(name))
             {

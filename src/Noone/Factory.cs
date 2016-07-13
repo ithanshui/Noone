@@ -9,10 +9,10 @@ namespace Noone
     public class Factory<T> where T : class
     {
         #region 空间换性能
-        private static readonly Factory<T> instance0 = new Factory<T>();
-        private static readonly Factory<T> instance1 = new Factory<T>();
+        private static readonly Factory<T> instance0 = new Factory<T>(0);
+        private static readonly Factory<T> instance1 = new Factory<T>(1);
         private static readonly ConcurrentDictionary<int, Factory<T>> instances = new ConcurrentDictionary<int, Factory<T>>();
-        private static Func<int, Factory<T>> newFunc = (cid) => { return new Factory<T>(); };
+        private static Func<int, Factory<T>> newFunc = (cid) => { return new Factory<T>(cid); };
         public static Factory<T> GetFactory(int id)
         {
             if (id == 0) return instance0;
@@ -21,16 +21,22 @@ namespace Noone
         }
         #endregion
 
+        protected int Id;
+        public Factory(int id)
+        {
+            Id = id;
+        }
         #region Creaters
         public interface ICreater
         {
             T Create();
         }
-        class Creater<U> : ICreater where U : T, new()
+        class Creater<U> : ICreater where U : class, T, new()
         {
             public T Create()
             {
-                return new U();
+                return FastActivator<U>.CreateInstance();
+                //return new U();
             }
         }
         class FuncCreater : ICreater
@@ -46,7 +52,7 @@ namespace Noone
             }
         }
 
-        class SingletonCreater<U> : ICreater where U : T, new()
+        class SingletonCreater<U> : ICreater where U : class, T, new()
         {
             //由于整个IoC容器不是静态的,所以不能用内部类static readonly魔法来搞,否则可能会出现多个索引名称注册了单例子,但引用了同一个对象,多个索引名称变成了别名的情况,只能用双检锁了
             private object locker = new object();
@@ -59,14 +65,15 @@ namespace Noone
                     {
                         if (instance == null)
                         {
-                            Interlocked.Exchange(ref instance, new U());
+                            Interlocked.Exchange(ref instance, FastActivator<U>.CreateInstance());
+                            //Interlocked.Exchange(ref instance, new U());
                         }
                     }
                 }
                 return instance;
             }
         }
-        class SingletonPerThreadCreater<U> : ICreater where U : T, new()
+        class SingletonPerThreadCreater<U> : ICreater where U : class, T, new()
         {
             //由于整个IoC容器不是静态的,所以不能用内部类static readonly魔法来搞,否则可能会出现多个索引名称注册了单例子,但引用了同一个对象,多个索引名称变成了别名的情况,只能用双检锁了
             private object locker = new object();
@@ -81,7 +88,8 @@ namespace Noone
                     {
                         if ((rst = instance.Value) == null)
                         {
-                            rst = new U();
+                            //rst = new U();
+                            rst = FastActivator<U>.CreateInstance();
                             instance.Value = rst;
                             return rst;
                             //Interlocked.Exchange(ref instance.Value, new U());
@@ -169,12 +177,12 @@ namespace Noone
         {
             return creater.Create();
         }
-        public void Reg<S>() where S : T, new()
+        public void Reg<S>() where S : class, T, new()
         {
             creater = new Creater<S>();
             AddReg(null);
         }
-        public void RegSingleton<S>(bool isPerThread) where S : T, new()
+        public void RegSingleton<S>(bool isPerThread) where S : class, T, new()
         {
             if (isPerThread)
                 creater = new SingletonPerThreadCreater<S>();
@@ -211,13 +219,13 @@ namespace Noone
             else
                 return ct.Create();
         }
-        public void Reg<S>(string key) where S : T, new()
+        public void Reg<S>(string key) where S : class, T, new()
         {
             creaters.Add(key, new Creater<S>());
             //creaters[key] = new Creater<S>();
             AddReg(key);
         }
-        public void RegSingleton<S>(string key, bool isPerThread) where S : T, new()
+        public void RegSingleton<S>(string key, bool isPerThread) where S : class, T, new()
         {
             if (isPerThread)
                 creaters.Add(key, new SingletonPerThreadCreater<S>());

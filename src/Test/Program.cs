@@ -11,9 +11,73 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Noone.Test
 {
+    public class NormalClass
+    {
+
+    }
+    public class GenericClass<T>
+    {
+
+    }
+    
 
     public class Program
     {
+        public static ISMS FastCreate<T>() where T : class, ISMS, new()
+        {
+            return FastActivator<T>.CreateInstance();
+        }
+
+        public static ISMS Create()
+        {
+            return new XSMS();
+        }
+
+        public static ISMS Create<T>() where T : class, ISMS, new()
+        {
+            return new T();
+        }
+
+
+        public class TestCreater
+        {
+            /// <summary>
+            /// 直接创建
+            /// </summary>
+            /// <returns></returns>
+            public static ISMS Driect()
+            {
+                return new XSMS();
+            }
+            private interface ICreater
+            {
+                ISMS Create();
+            }
+            private static readonly ICreater creater = new Creater();
+            private class Creater : ICreater
+            {
+                public ISMS Create()
+                {
+                    return new XSMS();
+                }
+            }
+            /// <summary>
+            /// 每次都创建Creater对象用Creater对象来创建
+            /// </summary>
+            /// <returns></returns>
+            public static ISMS InternalCreaterCreater()
+            {
+                return new Creater().Create();
+            }
+            /// <summary>
+            /// 使用静态缓存的Creater创建
+            /// </summary>
+            /// <returns></returns>
+            public static ISMS StaticCreaterCreate()
+            {
+                return creater.Create();
+            }
+        }
         public static void Main(string[] args)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -21,6 +85,70 @@ namespace Noone.Test
             var sw = new Stopwatch();
             Console.WriteLine("请输入循环次数");
             int max = int.Parse(Console.ReadLine());
+
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = Create();
+            }
+            sw.Stop();
+            Console.WriteLine("直接创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = TestCreater.Driect();
+            }
+            sw.Stop();
+            Console.WriteLine("TestCreater.Driect方法创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = TestCreater.InternalCreaterCreater();
+            }
+            sw.Stop();
+            Console.WriteLine("TestCreater.InternalCreaterCreater方法创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = TestCreater.StaticCreaterCreate();
+            }
+            sw.Stop();
+            Console.WriteLine("TestCreater.StaticCreaterCreate方法创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+
+            //Console.ReadLine();
+
+
+
+
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = Create<XSMS>();
+            }
+            sw.Stop();
+            Console.WriteLine("泛型方法创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+            Activator.CreateInstance<XSMS>();
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = Activator.CreateInstance<XSMS>();
+            }
+            sw.Stop();
+            Console.WriteLine("Activator创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+            FastCreate<XSMS>();
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = FastCreate<XSMS>();
+            }
+            sw.Stop();
+            Console.WriteLine("FastActivator创建耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+            
+
+            //Console.ReadLine();
 
             /*
             FastDic<object> dic = new FastDic<object>();
@@ -62,15 +190,15 @@ namespace Noone.Test
             Console.ReadLine();
             */
             var ctx = new Container();
-            
+
             //var mc = new ServiceDescriptor(typeof(ISMS),typeof(XSMS), ServiceLifetime.Transient);
             var serviceCollection = new ServiceCollection();
-            
-            serviceCollection.AddTransient<ISMS,XSMS>();
+
+            serviceCollection.AddTransient<ISMS, XSMS>();
             serviceCollection.AddSingleton<ISMS2, SMS2>();
 
             var mc = serviceCollection.BuildServiceProvider();
-            
+
             mc.GetService<ISMS>();
             ctx.Resolve<ISMS>();
             ctx.Resolve<ISMS>("alidayu");
@@ -114,10 +242,22 @@ namespace Noone.Test
             }
             sw.Stop();
             Console.WriteLine("asp.net core DependencyInjection Transient耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
+
+            sw.Restart();
+            for (var i = 0; i < max; i++)
+            {
+                var x = new XSMS();
+                //int id = Thread.CurrentThread.ManagedThreadId;
+                //x.Send(null, 0, null, null);
+            }
+            sw.Stop();
+            Console.WriteLine("code Transient耗时{0}ms,平均每次{1}ns", sw.ElapsedMilliseconds, sw.ElapsedMilliseconds * 1000000M / (decimal)max);
             Console.ReadLine();
         }
-        
+
     }
+
+
 
     public interface ISMS
     {
@@ -144,11 +284,13 @@ namespace Noone.Test
         {
             throw new NotImplementedException();
         }
+
         protected string FormatTpl(string tpl, string msg, long phoneNumber, string client, string sign)
         {
             return tpl.Replace("$sign", sign).Replace("$msg", msg).Replace("$client", client);
         }
     }
+
     public class AlidayuSMS : BaseSMS
     {
         public AlidayuSMS(string code, int? id, string pwd)
@@ -208,4 +350,5 @@ namespace Noone.Test
             //Console.WriteLine("从FriendSMS发短信:" + FormatTpl(tpl, msg, phone, client, sign));
         }
     }
+
 }
